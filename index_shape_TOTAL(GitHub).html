@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="pt">
+
+<head>
+	<meta charset='utf-8' />
+	<meta name="license" content="CC BY-SA 4.0 International">
+	<meta name="author" content="Raquel Dezidério Souto">
+	<meta name="author_email" content="raquel@ivides.org">
+]	<meta name="version" content="2.0">
+	<meta name="date" content="2020-12-01T23:20:34-0300" >
+	<title>Mapa Dinâmico com OpenStreetMap e LEAFLET</title>
+   <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet/v1.0.3/leaflet.css" />
+   <script src="http://cdn.leafletjs.com/leaflet/v1.0.3/leaflet.js"></script>
+	<script src="leaflet.shpfile.js"></script>
+	<script src="shp.js"></script>
+	<style>
+		html {
+			height: 100%
+		}
+
+		body {
+			height: 100%;
+			margin: 0;
+			padding: 0;
+		}
+
+		#map {
+			height: 100%;
+			width: 90%;
+		}
+		
+		.legend {
+			line-height: 18px;
+			color: #555;
+			background-color: #ffffff;
+			margin-left: 8px;
+			
+		}
+		
+		.legend i {
+			width: 18px;
+			height: 18px;
+			float: left;
+			margin-right: 8px;
+			opacity: 0.4;
+		}		
+	</style>
+</head>
+
+<body bgcolor="#ffffff">
+
+<div>
+
+<center>
+
+</center>
+
+
+</div>
+
+
+	<div id="map"></div>
+	
+	<script>
+	
+		
+		/*Faz a classificação de acordo com a variável CASOS POSITIVOS ATIVOS*/
+		function getColor(d2) {
+			return d2 > 500               ? '#5c1a57':
+			      d2 <= 500 && d2 > 300 ? '#993404' :
+					d2 <= 300 && d2 > 100   ? '#bd0026' :
+				   d2 <= 100 && d2 > 50   ? '#f03b20' :
+				   d2 <= 50 && d2 > 30   ? '#fd8d3c' :
+				   d2 <= 30   && d2 > 10  ? '#fed976' :
+				   d2 <= 10   && d2 >= 1  ? '#fed9bb' :
+				   d2 == 0  ? '#ffffff' : '#ffffff' ;
+										   
+		}	
+		
+				/*Estilo do mapa e chamada da função de classificação CASOS POSITIVOS ATIVOS*/
+		function style(feature2) {
+				return {
+					fillColor: getColor(feature2.properties.POSATIVO),
+					weight: 2,
+					opacity: 2,
+					color: 'white',
+					dashArray: '3',
+					fillOpacity: 0.4
+				};
+		}						
+			
+		/*Criação da variável que será utilizada como camada base*/
+		var camada_base  = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+			attribution: '&copy; Contribuidores do <a href="http://osm.org/copyright">OpenStreetMap</a>'
+		})
+		
+		/*Criação da variável MAPA e a localização onde o mapa será centralizado e o nível do zoom*/
+		var mapa = L.map('map',{layers:[camada_base]}).setView([-21.849953, -41.347835], 9);
+		
+
+		/*Criação da variável da camada RESPIRADORES que ficará sobreposta a camada base*/
+		var respiradores = new L.Shapefile('../dados_covid/Rio_de_Janeiro_CasosCovid(GitHub).zip',{onEachFeature:function(feature1,layer) {
+		layer.bindPopup('<b><h3>'+feature1.properties.NOME+'</b></h3>'+
+		'<b>MESORREGIÃO: </b>'+feature1.properties.MESOREG+'<br />'+
+		'<b>GEOCÓDIGO IBGE: </b>'+feature1.properties.GEOCODIGO+'<br />'+
+		'<b>CASOS POSITIVOS ATIVOS: </b>'+feature1.properties.POSATIVO+'<br />'+
+		'<b>CASOS CONFIRMADOS: </b>'+feature1.properties.CONFIRMADO+'<br />'+
+		'<b>ÓBITOS: </b>'+feature1.properties.OBT+'<br />'+
+		'<b>POPULAÇÃO (2019): </b>'+feature1.properties.POPTOTAL+'<br />'+
+		'<b>ÁREA TERRITORIAL (Km2): </b>'+feature1.properties.AREAKM2+'<br />'+
+		'<b>DENSIDADE DEMOGRÁFICA (hab./Km2): </b>'+feature1.properties.DENSDEMO+'<br />'+
+		'<b>HOSPITAIS ESPECIALIZADOS COVID19: </b>'+feature1.properties.HOSPCOVID+'<br />'+
+		'<b>CENTROS DE TRIAGEM COVID19: </b>'+feature1.properties.CENTROSTRI+'<br />'+
+		'<b>MÉDICOS PNEUMOLOGISTAS (SUS): </b>'+feature1.properties.MES_PNEU+'<br />'+
+		'<b>MÉDICOS PNEUMOLOGISTAS (PRIVADO): </b>'+feature1.properties.MEP_PNEU+'<br />'+
+		'<b>MÉDICOS IMUNOLOGISTAS (SUS): </b>'+feature1.properties.MES_IMUN+'<br />'+
+		'<b>MÉDICOS IMUNOLOGISTAS (PRIVADO): </b>'+feature1.properties.MEP_IMUN+'<br />'+
+		'<b>MÉDICOS INFECTOLOGISTAS (SUS): </b>'+feature1.properties.MES_INFE+'<br />'+
+		'<b>MÉDICOS INFECTOLOGISTAS (PRIVADO): </b>'+feature1.properties.MEP_INFE+'<br />'+
+		'<b>ENFERMEIROS INTENSIVISTAS (SUS): </b>'+feature1.properties.ENFS_IN+'<br />'+
+		'<b>ENFERMEIROS INTENSIVISTAS (PRIVADO): </b>'+feature1.properties.ENFP_IN+'<br />'+
+		'<b>FISIOTERAPEUTAS RESPIRATÓRIOS (SUS): </b>'+feature1.properties.FISS_RES+'<br />'+
+		'<b>RESPIRADORES: </b>'+feature1.properties.RESPIRAD+'<br />'+
+		'<b>DATA ATUALIZAÇÃO: </b>'+feature1.properties.DT+'<br />');
+		},style:style});	
+		
+	
+	/*Criação da variável da camada CASOS POSITIVOS ATIVOS que ficará sobreposta a camada base*/
+		var posativos = new L.Shapefile('../dados_covid/Rio_de_Janeiro_CasosCovid(GitHub).zip',{onEachFeature:function(feature2,layer) {
+		layer.bindTooltip('<b><h3>'+feature2.properties.NOME+'</h3></b>'+
+		'<b>CASOS POSITIVOS ATIVOS: </b>'+feature2.properties.POSATIVO+'<br />'+
+		'<b>POPULAÇÃO (2019): </b>'+feature2.properties.POPTOTAL+'<br />'+
+		'<b>ÁREA TERRITORIAL (Km2): </b>'+feature2.properties.AREAKM2+'<br />'+
+		'<b>DENSIDADE DEMOGRÁFICA (hab./Km2): </b>'+feature2.properties.DENSDEMO+'<br />'+
+		'<b>HOSPITAIS ESPECIALIZADOS COVID19: </b>'+feature2.properties.HOSPCOVID+'<br />'+
+		'<b>CENTROS DE TRIAGEM COVID19: </b>'+feature2.properties.CENTROSTRI+'<br />'+
+		'<b>MESORREGIÃO: </b>'+feature2.properties.MESOREG+'<br />'+
+		'<b>GEOCÓDIGO IBGE: </b>'+feature2.properties.GEOCODIGO+'<br />'+
+		'<b>DATA ATUALIZAÇÃO: </b>'+feature2.properties.DT+'<br />');
+		},style:style});	
+		
+	/*Criação da variável da camada CASOS CONFIRMADOS que ficará sobreposta a camada base*/
+		var confirmados = new L.Shapefile('../dados_covid/Rio_de_Janeiro_CasosCovid(GitHub).zip',{onEachFeature:function(feature3,layer) {
+		layer.bindTooltip('<b><h3>'+feature3.properties.NOME+'</b></h3>'+
+		'<b>CASOS CONFIRMADOS: </b>'+feature3.properties.CONFIRMADO+'<br />'+
+		'<b>ÓBITOS: </b>'+feature3.properties.OBT+'<br />'+
+		'<b>POPULAÇÃO (2019): </b>'+feature3.properties.POPTOTAL+'<br />'+
+		'<b>ÁREA TERRITORIAL (Km2): </b>'+feature3.properties.AREAKM2+'<br />'+
+		'<b>DENSIDADE DEMOGRÁFICA (hab./Km2): </b>'+feature3.properties.DENSDEMO+'<br />'+
+		'<b>HOSPITAIS ESPECIALIZADOS COVID19: </b>'+feature3.properties.HOSPCOVID+'<br />'+
+		'<b>CENTROS DE TRIAGEM COVID19: </b>'+feature3.properties.CENTROSTRI+'<br />'+
+		'<b>MESORREGIÃO: </b>'+feature3.properties.MESOREG+'<br />'+
+		'<b>GEOCÓDIGO IBGE: </b>'+feature3.properties.GEOCODIGO+'<br />'+
+		'<b>DATA ATUALIZAÇÃO: </b>'+feature3.properties.DT+'<br />');
+		},style:style});	
+		
+	
+
+	//bindPopup por bindTooltip		
+	
+		
+		var baseLayers = {"<h3>INFRAESTRUTURA<br>DE SAÚDE</h3>" : respiradores, "<h3>CASOS POSITIVOS<br>ATIVOS COVID19</h3>" : posativos, "<h3>CASOS CONFIRMADOS<br>COVID19</h3>" : confirmados};
+		var overlays = {"<h3>MAPA BASE</h3>": camada_base};
+		
+		L.control.layers(baseLayers,overlays).addTo(mapa);
+		camada_base.addTo(mapa); 
+		posativos.addTo(mapa);
+		
+	
+	/*Cria a legenda CASOS POSITIVOS ATIVOS*/
+	
+		var legend2 = L.control({position: 'topleft'});
+		legend2.onAdd = function (map) {
+					
+				var div = L.DomUtil.create('div', 'info legend'),
+					grades2 = [0, 10, 30, 50, 100, 300, 500],
+					labels = [];
+					
+				div.innerHTML += '<h3>&nbsp;&nbsp;CASOS POSITIVOS&nbsp;&nbsp;<br>&nbsp;&nbsp;ATIVOS COVID-19</h3>';
+					
+		// loop through our density intervals and generate a label with a colored square for each interval
+				for (var i = 0; i < grades2.length; i++) {
+					div.innerHTML +=
+						'<i style="background:' + getColor(grades2[i] + 1) + '"></i><h3>&nbsp; ' +
+						(grades2[i]+1) + (grades2[i + 1] ? '&ndash;' + grades2[i + 1] + '&nbsp;</h3>' : '+');
+				}				
+				              		
+			return div;
+	
+			}		
+		
+		/*Carrega a legenda casos positivos ativos*/
+		
+		legend2.addTo(mapa);
+
+
+		//MARCADORES
+		
+//HOSPITAIS **********************************
+
+		//Hospitais BOM JESUS DE ITABAPOANA ///////////////////////////////
+		
+		var hosIcon1a = L.icon({
+      iconUrl: 'image_hosp_md.png',
+      shadowUrl:'image_hosp_md.png',
+
+    iconSize:     [47, 32], // size of the icon
+    shadowSize:   [47, 32], // size of the shadow
+       //iconAnchor:   [-21.75595, -41.32856], // point of the icon which will correspond to marker's location
+    //shadowAnchor: [-21.75595, -41.32856],  // the same for the shadow
+    //popupAnchor:  [-21.75595, -41.32856] // point from which the popup should open relative to the iconAnchor
+
+});
+
+L.marker([-21.13804, -41.67933], {icon: hosIcon1a}).addTo(mapa).bindPopup("<b>BOM JESUS DE ITABAPOANA - RJ</b><br><b>Hospital São Vicente de Paula</b><br>R. Ten. José Teixeira, 473. Centro. Bom Jesus do Itabapoana. RJ. CEP: 28360-000.");
+
+
+
+		//Hospitais CAMBUCI /////////////////
+		
+		var hosIcon1b = L.icon({
+      iconUrl: 'image_hosp_ct_md.png',
+      shadowUrl:'image_hosp_ct_md.png',
+
+    iconSize:     [47, 32], // size of the icon
+    shadowSize:   [47, 32], // size of the shadow
+    //iconAnchor:   [-21.75595, -41.32856], // point of the icon which will correspond to marker's location
+    //shadowAnchor: [-21.75595, -41.32856],  // the same for the shadow
+    //popupAnchor:  [-21.75595, -41.32856] // point from which the popup should open relative to the iconAnchor
+});
+
+L.marker([-21.5774, -41.9111], {icon: hosIcon1b}).addTo(mapa).bindPopup("<b>CAMBUCI - RJ</b><br><b>Hospital Moacyr Gomes de Azevedo</b><br>Av. José de Souza Faria, 83 - Guarani, Cambuci - RJ. CEP: 28430-000.<br><b>Obs: no hospital, está sendo feita a triagem.</b>");
+		
+		//Hospitais CAMPOS DOS GOYTACAZES ///////////////
+	
+		var hosIcon1 = L.icon({
+      iconUrl: 'image_hosp_ct_md.png',
+      shadowUrl:'image_hosp_ct_md.png',
+
+    iconSize:     [47, 32], // size of the icon
+    shadowSize:   [47, 32], // size of the shadow
+    //iconAnchor:   [-21.75595, -41.32856], // point of the icon which will correspond to marker's location
+    //shadowAnchor: [-21.75595, -41.32856],  // the same for the shadow
+    //popupAnchor:  [-21.75595, -41.32856] // point from which the popup should open relative to the iconAnchor
+});
+
+L.marker([-21.75595, -41.32856], {icon: hosIcon1}).addTo(mapa).bindPopup("<b>CAMPOS DOS GOYTACAZES - RJ</b><br><b>Hospital Beneficência Portuguesa</b><br>Rua Barão de Miracema, 140, Centro, Campos dos Goytacazes - RJ. CEP: 28035-300. <br><b>Obs: no hospital, está sendo feita a triagem.</b>");	
+
+
+		//Hospitais CARDOSO MOREIRA ///////////////
+	
+		var hosIcon3 = L.icon({
+      iconUrl: 'image_hosp_md.png',
+      shadowUrl:'image_hosp_md.png',
+
+    iconSize:     [47, 32], // size of the icon
+    shadowSize:   [47, 32], // size of the shadow
+    //iconAnchor:   [-21.75595, -41.32856], // point of the icon which will correspond to marker's location
+    //shadowAnchor: [-21.75595, -41.32856],  // the same for the shadow
+    //popupAnchor:  [-21.75595, -41.32856] // point from which the popup should open relative to the iconAnchor
+});
+
+L.marker([-21.4870, -41.6177], {icon: hosIcon3}).addTo(mapa).bindPopup("<b>CARDOSO MOREIRA - RJ</b><br><b>Hospital José Salgueiro</b><br>Rua Manoel Aguiar. Praça Tiradentes, Cardoso Moreira - RJ. CEP: 28180-000.");	
+
+
+	//Hospitais CONCEIÇÃO DE MACABU ////////////////
+	
+		var hosIcon2 = L.icon({
+      iconUrl: 'image_hosp_ct_md.png',
+      shadowUrl:'image_hosp_ct_md.png',
+
+    iconSize:     [47, 32], // size of the icon
+    shadowSize:   [47, 32], // size of the shadow
+    
+});
+
+L.marker([-22.08959, -41.8672], {icon: hosIcon2}).addTo(mapa).bindPopup("<b>CONCEIÇÃO DE MACABU - RJ</b><br><b>Hospital Municipal Ana Moreira</b><br>R. Rozendo Fontes Taváres, 199,  Bocaina, Conceição de Macabu - RJ. CEP: 28740-000.<br><b>Obs: no hospital, está sendo feita a triagem.</b>");	
+		
+	//Hospitais ITAPERUNA //////////////////////////
+	
+
+		var hosIcon3a = L.icon({
+      iconUrl: 'image_hosp_md.png',
+      shadowUrl:'image_hosp_md.png',
+
+    iconSize:     [47, 32], // size of the icon
+    shadowSize:   [47, 32], // size of the shadow
+    
+});
+
+L.marker([-21.20198, -41.88971], {icon: hosIcon3a}).addTo(mapa).bindPopup("<b>ITAPERUNA - RJ</b><br><b>Hospital São José do Avaí</b><br>R. Cel. Luís Ferraz, 397, Centro, Itaperuna - RJ. CEP: 28300-000.");	
+
+
+	//Hospitais MACAÉ ////////////////////////
+	
+
+		var hosIcon4 = L.icon({
+      iconUrl: 'image_hosp_md.png',
+      shadowUrl:'image_hosp_md.png',
+
+    iconSize:     [47, 32], // size of the icon
+    shadowSize:   [47, 32], // size of the shadow
+   
+});
+
+L.marker([-22.35631, -41.80763], {icon: hosIcon4}).addTo(mapa).bindPopup("<b>MACAÉ - RJ</b><br><b>Hospital Público Municipal de Macaé</b><br>Rodovia RJ 168 - Km 4 S/N - Virgem Santa, Macaé - RJ.");	
+
+
+	
+		//Hospital QUISSAMÃ  ///////////////////////
+	
+
+		var hosIcon5 = L.icon({
+      iconUrl: 'image_hosp_md.png',
+      shadowUrl:'image_hosp_md.png',
+
+    iconSize:     [47, 32], // size of the icon
+    shadowSize:   [47, 32], // size of the shadow
+   
+});
+
+L.marker([-22.11254, -41.47058], {icon: hosIcon5}).addTo(mapa).bindPopup("<b>QUISSAMÃ - RJ</b><br><b>Hospital Municipal Mariana Maria de Jesus</b><br>Av. Amilcar Pereira da Silva, S/N - Piteiras, Quissamã - RJ. CEP: 28735-000.<br><b>Obs: O Hospital de Campanha está sendo erguido ao lado do anexo desse hospital.</b>");	
+
+
+		//Hospital SANTO ANTÔNIO DE PÁDUA ///////////////////
+	
+
+		var hosIcon5a = L.icon({
+      iconUrl: 'image_hosp_md.png',
+      shadowUrl:'image_hosp_md.png',
+
+    iconSize:     [47, 32], // size of the icon
+    shadowSize:   [47, 32], // size of the shadow
+   
+});
+
+L.marker([-21.53301, -42.19324], {icon: hosIcon5a}).addTo(mapa).bindPopup("<b>SANTO ANTÔNIO DE PÁDUA - RJ</b><br><b>Hospital Hélio Montezano de Oliveira</b><br>Tv. João Jasbick, 520 - Cehab, Santo Antônio de Pádua - RJ. CEP: 28470-000.<br>");	
+
+
+	//Hospital SÃO FIDÉLIS ///////////////////////
+	
+
+		var hosIcon5b = L.icon({
+      iconUrl: 'image_hosp_ct_md.png',
+      shadowUrl:'image_hosp_ct_md.png',
+
+    iconSize:     [47, 32], // size of the icon
+    shadowSize:   [47, 32], // size of the shadow
+   
+});
+
+L.marker([-21.65446, -41.75221], {icon: hosIcon5b}).addTo(mapa).bindPopup("<b>SÃO FIDÉLIS - RJ</b><br><b>Hospital Armando Vidal</b><br>R. Dr. Faria Serra, 79, São Fidélis - RJ. CEP: 28400-000.<br><b>Obs: no hospital, está sendo feita a triagem.</b>");	
+
+//Hospital SÃO FRANCISCO ITABAPOANA /////////////////
+	
+
+		var hosIcon10 = L.icon({
+      iconUrl: 'image_hosp_ct_md.png',
+      shadowUrl:'image_hosp_ct_md.png',
+
+    iconSize:     [47, 32], // size of the icon
+    shadowSize:   [47, 32], // size of the shadow
+   
+});
+
+L.marker([-21.4113, -41.1405], {icon: hosIcon10}).addTo(mapa).bindPopup("<b>SÃO FRANCISCO DE ITABAPOANA - RJ</b><br><b>Hospital Municipal Manoel Carola</b><br>Av. Nilton Mayerhoffer Pessanha, 48, Ponto de Cacimbas, São Francisco de Itabapoana - RJ. CEP: 28230-000.<br><b>Obs: no hospital, está sendo feita a triagem.</b>");	
+
+//Hospital SÃO JOÃO DA BARRA /////////////////
+	
+
+		var hosIcon10a = L.icon({
+      iconUrl: 'image_hosp_md.png',
+      shadowUrl:'image_host_md.png',
+
+    iconSize:     [47, 32], // size of the icon
+    shadowSize:   [47, 32], // size of the shadow
+   
+});
+
+L.marker([-21.6342, -41.0437], {icon: hosIcon10a}).addTo(mapa).bindPopup("<b>SÃO JOÃO DA BARRA - RJ</b><br>Centro Municipal De Emergencia Dr. Pedro Otávio Enes Barreto<br>BR-356, S/N. Centro. São João da Barra - RJ. CEP: 28200-000.<br>");	
+
+
+
+		//Hospital SAO JOSÉ DE UBÁ
+	
+
+		var ctIcon6 = L.icon({
+      iconUrl: 'image_hosp_ct_md.png',
+      shadowUrl:'image_hosp_ct_md.png',
+
+    iconSize:     [47, 32], // size of the icon
+    shadowSize:   [47, 32], // size of the shadow
+  
+});
+
+L.marker([-21.35908, -41.94214], {icon: ctIcon6}).addTo(mapa).bindPopup("<b>SÃO JOSÉ DE UBÁ - RJ</b><br><b>Serviço de Pronto Atendimento Médico Dr. Sebastião Araújo Padilha</b><br>Av. David Vieira Ney, 149. Centro. São José de Ubá - RJ. CEP: 28.455-000.<br><b>Obs: no hospital, está sendo feita a triagem.</b>");	
+
+
+
+
+//CENTROS DE TRIAGEM *****************
+
+
+//Centro de Triagem APERIBÉ
+	
+
+		var ctIcon1 = L.icon({
+      iconUrl: 'image_ct_md.png',
+      shadowUrl:'image_ct_md.png',
+
+    iconSize:     [28, 37], // size of the icon
+    shadowSize:   [28, 37], // size of the shadow
+   
+});
+
+L.marker([-21.6199, -42.10844], {icon: ctIcon1}).addTo(mapa).bindPopup("<b>APERIBÉ - RJ</b><br><b>Centro de Triagem - COVID-19</b><br>R. Antônio José Moreira, 359, Faria Leite, Aperibé - RJ. CEP: 28495-000.");	
+
+
+//Centro de Triagem BOM JESUS DE IATABAPOANA
+	
+
+		var ctIcon2 = L.icon({
+      iconUrl: 'image_ct_md.png',
+      shadowUrl:'image_ct_md.png',
+
+    iconSize:     [28, 37], // size of the icon
+    shadowSize:   [28, 37], // size of the shadow
+   
+});
+
+L.marker([-21.13679, -41.67569], {icon: ctIcon2}).addTo(mapa).bindPopup("<b>BOM JESUS DE ITABAPOANA - RJ</b><br><b>Centro de Triagem - COVID-19</b><br>Clínica da Família Padre José Paulo Vieira<br>Av. Governador Roberto Silveira, 234. Centro, Bom Jesus do Itabapoana. RJ. CEP: 28360-000.");	
+
+
+//Centro de Triagem CAMBUCI
+	
+
+		var ctIcon3 = L.icon({
+      iconUrl: 'image_hosp_ct_md.png',
+      shadowUrl:'image_hosp_ct_md.png',
+
+    iconSize:     [47, 32], // size of the icon
+    shadowSize:   [47, 32], // size of the shadow
+   
+});
+
+L.marker([-21.57743, -41.91114], {icon: ctIcon3}).addTo(mapa).bindPopup("<b>CAMBUCI - RJ</b><br><b>Centro de Triagem - COVID-19</b><br>Anexo ao Hospital Moacyr Gomes de Azevedo<br>Av. José de Souza Faria, 83. Guarani, Cambuci. RJ. CEP: 28430-000.");	
+
+
+		//Centro de Triagem CARAPEBUS
+	
+
+		var ctIcon4 = L.icon({
+      iconUrl: 'image_ct_md.png',
+      shadowUrl:'image_ct_md.png',
+
+    iconSize:     [28, 37], // size of the icon
+    shadowSize:   [28, 37], // size of the shadow
+   
+});
+
+L.marker([-22.18396, -41.65974 ], {icon: ctIcon4}).addTo(mapa).bindPopup("<b>CARAPEBUS - RJ</b><br><b>Centro de Triagem - COVID-19</b><br><b>Pronto Atendimento Carlito Gonçalves</b><br>Rua João Pedro Sobrinho, 41, Centro, Carapebus - RJ. CEP: 28250-000.");	
+
+
+
+
+		//Centro de Triagem ITALVA
+	
+
+		var ctIcon5 = L.icon({
+      iconUrl: 'image_ct_md.png',
+      shadowUrl:'image_ct_md.png',
+
+    iconSize:     [28, 37], // size of the icon
+    shadowSize:   [28, 37], // size of the shadow
+   
+});
+
+L.marker([-21.42534, -41.69269], {icon: ctIcon5}).addTo(mapa).bindPopup("<b>ITALVA - RJ</b><br><b>Centro de Triagem - COVID-19</b><br><b>Casa Sentinela</b><br>Rua Diva Romano, 126, Morro Grande, Italva - RJ. CEP: 28250-000.");	
+
+
+		//Centro de Triagem MACAÉ
+	
+
+		var ctIcon6 = L.icon({
+      iconUrl: 'image_ct_md.png',
+      shadowUrl:'image_ct_md.png',
+
+    iconSize:     [28, 37], // size of the icon
+    shadowSize:   [28, 37], // size of the shadow
+   
+});
+
+L.marker([-22.37133, -41.77999], {icon: ctIcon6}).addTo(mapa).bindPopup("<b>MACAÉ - RJ</b><br><b>Centro de Triagem - COVID-19</b><br>Rua Tenente Coronel Amado, 225, Centro, Macaé - RJ.");	
+
+
+	//Centro de Triagem NATIVIDADE 
+	
+
+		var ctIcon7 = L.icon({
+      iconUrl: 'image_ct_md.png',
+      shadowUrl:'image_ct_md.png',
+
+    iconSize:     [28, 37], // size of the icon
+    shadowSize:   [28, 37], // size of the shadow
+   
+});
+
+L.marker([-21.03106, -41.99429], {icon: ctIcon7}).addTo(mapa).bindPopup("<b>NATIVIDADE - RJ</b><br><b>Centro de Triagem - COVID-19</b><br>Av. Mauro Alves Ribeiro Júnior, 1044. Balneario, Natividade - RJ. CEP: 28380-000.");	
+
+
+
+		//Centro de Triagem SÃO JOÃO DA BARRA
+	
+
+		var ctIcon8 = L.icon({
+      iconUrl: 'image_ct_md.png',
+      shadowUrl:'image_ct_md.png',
+
+    iconSize:     [28, 37], // size of the icon
+    shadowSize:   [28, 37], // size of the shadow
+  
+});
+
+L.marker([-21.63594, -41.04847], {icon: ctIcon8}).addTo(mapa).bindPopup("<b>SÃO JOÃO DA BARRA - RJ</b><br><b>Centro de Triagem - COVID-19</b><br>Unidade de Saúde Dr. Félix<br>Rua Coronel Teixeira, Centro, São João da Barra - RJ. CEP: 28200-000.");	
+
+
+		//Centro de Triagem SANTO ANTÔNIO DE PÁDUA
+	
+
+		var ctIcon9 = L.icon({
+      iconUrl: 'image_ct_md.png',
+      shadowUrl:'image_ct_md.png',
+
+    iconSize:     [28, 37], // size of the icon
+    shadowSize:   [28, 37], // size of the shadow
+  
+});
+
+L.marker([-21.53015, -42.19751], {icon: ctIcon9}).addTo(mapa).bindPopup("<b>SANTO ANTÔNIO DE PÁDUA - RJ</b><br><b>Centro de Triagem - COVID-19</b><br>Avenida Joao Jazbik, 467, Dezessete, Santo Antônio de Pádua - RJ. CEP: 28470-000.");	
+
+
+
+		//Centro de Triagem SAO FIDELIS
+	
+
+		var ctIcon10 = L.icon({
+      iconUrl: 'image_ct_md.png',
+      shadowUrl:'image_ct_md.png',
+
+    iconSize:     [28, 37], // size of the icon
+    shadowSize:   [28, 37], // size of the shadow
+  
+});
+
+L.marker([-21.63698, -41.77432], {icon: ctIcon10}).addTo(mapa).bindPopup("<b>SÃO FIDÉLIS - RJ</b><br><b>Centro de Triagem - COVID-19</b><br><b>Centro de Operações de Emergência Covid-19</b><br>Vila dos Coroados, São Fidélis. RJ. CEP: 28400-000.");	
+
+		//Centro de Triagem QUISSAMÃ  ///////////////////////
+	
+
+		var ctIcon11 = L.icon({
+      iconUrl: 'image_ct_md.png',
+      shadowUrl:'image_ct_md.png',
+
+    iconSize:     [28, 37], // size of the icon
+    shadowSize:   [28, 37], // size of the shadow
+   
+});
+
+L.marker([-22.11636, -41.48776], {icon: ctIcon11}).addTo(mapa).bindPopup("<b>QUISSAMÃ - RJ</b><br><b>Centro de Triagem COVID-19</b><br><b>Unidade de Saúde da Família do Carmo. </b><br>RJ-196 - Piteiras, Quissamã - RJ. CEP: 28735-000.");	
+
+
+
+		//Centro de Triagem SANTO ANTÔNIO DE PÁDUA ///////////////////
+	
+
+		var ctIcon12 = L.icon({
+      iconUrl: 'image_ct_md.png',
+      shadowUrl:'image_ct_md.png',
+
+    iconSize:     [28, 37], // size of the icon
+    shadowSize:   [28, 37], // size of the shadow
+   
+});
+
+L.marker([-21.53015, -42.19751], {icon: ctIcon12}).addTo(mapa).bindPopup("<b>SANTO ANTÔNIO DE PÁDUA - RJ</b><br><b>Centro de Triagem COVID-19</b><br>Avenida João Jazbik, 467, Santo Antônio de Pádua – RJ. CEP: 28470-000.<br>");	
+
+		//Centro de Triagem BOM JESUS DE ITABAPOANA ///////////////////////////////
+		
+		var ctIcon13 = L.icon({
+      iconUrl: 'image_ct_md.png',
+      shadowUrl:'image_ct_md.png',
+
+    iconSize:     [28, 37], // size of the icon
+    shadowSize:   [28, 37], // size of the shadow
+    //iconAnchor:   [-21.75595, -41.32856], // point of the icon which will correspond to marker's location
+    //shadowAnchor: [-21.75595, -41.32856],  // the same for the shadow
+    //popupAnchor:  [-21.75595, -41.32856] // point from which the popup should open relative to the iconAnchor
+});
+
+L.marker([-21.13696, -41.67544], {icon: ctIcon13}).addTo(mapa).bindPopup("<b>BOM JESUS DE ITABAPOANA - RJ</b><br><b>Centro de Triagem COVID-19</b><br><b>Clínica da Família Padre José Paulo Vieira</b><br>Av. Gov. Roberto Silveira, n° 198 - Centro, Bom Jesus do Itabapoana - RJ. CEP: 28360-000.");
+
+		//Centro de Triagem PORCIÚNCULA ///////////////////
+	
+
+		var ctIcon14 = L.icon({
+      iconUrl: 'image_ct_md.png',
+      shadowUrl:'image_ct_md.png',
+
+    iconSize:     [28, 37], // size of the icon
+    shadowSize:   [28, 37], // size of the shadow
+   
+});
+
+L.marker([-20.96267, -42.03908], {icon: ctIcon14}).addTo(mapa).bindPopup("<b>PORCIÚNCULA - RJ</b><br><b>Centro de Triagem COVID-19</b><br>Anexo à Unidade Mista de Saúde Dr. Antônio Monteiro<br>Rua Schuwartz Viera, 109, Centro. Porciúncula – RJ. CEP: 28.390-000.");	
+
+
+
+
+	</script>
+		<br/>
+	
+
+</body>
+
+   
+
+</html>
